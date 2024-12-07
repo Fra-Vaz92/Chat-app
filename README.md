@@ -18,12 +18,13 @@ In today's mobile-centric world, efficient communication is paramount. This proj
 - Accessibility: Designed to be accessible to users with visual impairments.
 - Technical Implementation
 
-React Native: Core framework for building native mobile apps.
-Expo: Simplified development and deployment process.
-Google Firestore: Cloud-based NoSQL database for real-time data storage.
-Firebase Authentication: Secure user authentication and authorization.
-Gifted Chat: Pre-built chat UI component library for rapid development.
-Project Structure
+- React Native: Core framework for building native mobile apps.
+- Expo: Simplified development and deployment process.
+- Google Firestore: Cloud-based NoSQL database for real-time data storage.
+- Firebase Authentication: Secure user authentication and authorization.
+- Gifted Chat: Pre-built chat UI component library for rapid development.
+
+**Project Structure**
 
 Components: Reusable UI components for the chat interface, message bubbles, input fields, etc.
 Screens: Individual screens for the app's various views (start screen, chat screen, etc.).
@@ -31,21 +32,23 @@ Utils: Helper functions for common tasks like data formatting, API calls, and er
 Assets: Images, icons, and other static assets used in the app.
 Getting Started
 
-Clone the Repository:
-Bash
 
+1.Clone the Repository:
+```
 git clone https://github.com/your-username/chat-app.git
-Install Dependencies:
-Bash
+```
 
+2.Install Dependencies:
+```
 cd chat-app
 npm install
-Run the App:
-Bash
-
+```
+3.Run the App:
+```
 expo start
-Contributing
+```
 
+**Contribution**
 We welcome contributions to improve this project. Please follow these guidelines:
 
 Fork the repository.
