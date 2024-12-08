@@ -1,7 +1,5 @@
 import React, { useState } from "react";
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, ImageBackground} from "react-native";
-import { useNavigation } from '@react-navigation/native';
-
 
 const Start = ({ navigation }) => {
     const [username, setUsername] = useState('');
@@ -9,7 +7,7 @@ const Start = ({ navigation }) => {
     const [selectedBackground, setBackground] = useState('');
 
     const handleStartChat = () => {
-      navigation.navigate('Chat', { background: selectedBackground }); // Pass color as a param
+      navigation.navigate('Chat', {username: username || "User", background: selectedBackground }); // Pass color as a param
     };
 
     return (
@@ -48,7 +46,11 @@ const Start = ({ navigation }) => {
                 </View>
               </View>
             </View>
-            <TouchableOpacity style={styles.button} onPress={handleStartChat}>
+            <TouchableOpacity   accessible={true}
+            accessibilityLabel="More options"
+            accessibilityHint="Lets you choose to send an image or your geolocation."
+            accessibilityRole="button"
+            style={styles.button} onPress={handleStartChat}>
               <Text style={styles.buttonText}>Start Chatting</Text>
             </TouchableOpacity>
           </ImageBackground>
