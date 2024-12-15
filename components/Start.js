@@ -1,21 +1,54 @@
 import React, { useState } from "react";
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, ImageBackground} from "react-native";
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, ImageBackground, Alert } from "react-native";
+import { getAuth, signInAnonymously } from 'firebase/auth';
 
 const Start = ({ navigation }) => {
-    const [username, setUsername] = useState('');
-    const colors = ['#090C08', '#474056', '#8A95A5', '#B9C6AE'];
-    const [selectedBackground, setBackground] = useState('');
+  const [username, setUsername] = useState('');
+  const [selectedBackground, setBackground] = useState('');
+  const colors = ['#090C08', '#474056', '#8A95A5', '#B9C6AE'];
 
-    const handleStartChat = () => {
-      navigation.navigate('Chat', {username: username || "User", background: selectedBackground }); // Pass color as a param
-    };
+  const auth = getAuth();
 
-    return (
-        <View style={styles.container}>
-          <ImageBackground source={require("../assets/background.png")} style={styles.ImageBackground}>
-          <Text style={styles.title}>Let's Chat!</Text>
-          <View style={styles.contentContainer}>
-            <View style={styles.box}>
+  const signInUser = async () => {
+    try {
+      const res = await signInAnonymously(auth);
+      return res.user.uid; // Return user ID
+    } catch (err) {
+      Alert.alert("Unable to sign in, try later again");
+      return null;
+    }
+  };
+
+  const handleStartChat = async () => {
+    if (!username) {
+      Alert.alert("Username is required to start chatting.");
+      return;
+    }
+
+    try {
+      const { user } = await signInAnonymously(auth); // Sign in the user anonymously
+
+      // Display success alert and navigate after delay
+      Alert.alert("Login Successful", "You are signed in anonymously!");
+      setTimeout(() => {
+        navigation.navigate("Chat", {
+          userID: user.uid, // Pass the user ID
+          name: username, // Pass the username
+          background: selectedBackground, // Pass the selected background
+        });
+      }, 3000); // 3-second delay
+    } catch (error) {
+      Alert.alert("Failed to sign in. Please try again later.");
+      console.error("Anonymous Sign-In Error: ", error.message);
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <ImageBackground source={require("../assets/background.png")} style={styles.ImageBackground}>
+        <Text style={styles.title}>Let's Chat!</Text>
+        <View style={styles.contentContainer}>
+          <View style={styles.box}>
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
@@ -23,40 +56,33 @@ const Start = ({ navigation }) => {
                 onChangeText={setUsername}
                 value={username}
               />
-              </View>
-              { /* user choose bg color among the object options */ }
-              <Text style={styles.label}>Choose background color:</Text>
-              <View style={{ flexDirection: 'row' }}>
-                <TouchableOpacity
-                  style={[styles.colorOption, { backgroundColor: colors[0] }]}
-                  onPress={() => setBackground(colors[0])}
-                />
-                <TouchableOpacity
-                  style={[styles.colorOption, { backgroundColor: colors[1] }]}
-                  onPress={() => setBackground(colors[1])}
-                />
-                <TouchableOpacity
-                  style={[styles.colorOption, { backgroundColor: colors[2] }]}
-                  onPress={() => setBackground(colors[2])}
-                />
-                <TouchableOpacity
-                  style={[styles.colorOption, { backgroundColor: colors[3] }]}
-                  onPress={() => setBackground(colors[3])}
-                />
-                </View>
-              </View>
             </View>
-            <TouchableOpacity   accessible={true}
-            accessibilityLabel="More options"
-            accessibilityHint="Lets you choose to send an image or your geolocation."
+            <Text style={styles.label}>Choose background color:</Text>
+            <View style={{ flexDirection: 'row' }}>
+              {colors.map((color, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[styles.colorOption, { backgroundColor: color }]}
+                  onPress={() => setBackground(color)}
+                />
+              ))}
+            </View>
+          </View>
+          <TouchableOpacity
+            accessible={true}
+            accessibilityLabel="Start Chatting"
+            accessibilityHint="Starts the chat"
             accessibilityRole="button"
-            style={styles.button} onPress={handleStartChat}>
-              <Text style={styles.buttonText}>Start Chatting</Text>
-            </TouchableOpacity>
-          </ImageBackground>
+            style={styles.button}
+            onPress={handleStartChat}
+          >
+            <Text style={styles.buttonText}>Start Chatting</Text>
+          </TouchableOpacity>
         </View>
-      );
-    };
+      </ImageBackground>
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
