@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import { StyleSheet, View, Platform, KeyboardAvoidingView, Alert } from 'react-native';
-import { Bubble, GiftedChat } from "react-native-gifted-chat";
+import { Bubble, GiftedChat,InputToolbar } from "react-native-gifted-chat";
 import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "firebase/firestore";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+
 
 const Chat = ({ route, navigation, db, isConnected }) => {
   const { name, background, userID } = route.params;
@@ -12,39 +15,69 @@ const Chat = ({ route, navigation, db, isConnected }) => {
     navigation.setOptions({ title: name });
 
     // Create a Firestore query to get messages ordered by createdAt
-    const q = query(collection(db, "messages"), orderBy("createdAt", "desc"));
-    const unsubMessages = onSnapshot(q, (snapshot) => {
-      const newMessages = snapshot.docs.map((doc) => {
-        const data = doc.data();
-        const createdAt = data.createdAt ? data.createdAt.toDate() : new Date();  // Default to current date if createdAt is null
-        return {
-          _id: doc.id,
-          text: data.text,
-          createdAt,  // Handle missing createdAt field gracefully
-          user: data.user,
-        };
-      });
-      setMessages(newMessages);
-    });
+    const fetchMessages = async () => {
+      if (isConnected) {
+        // Create a Firestore query to get messages ordered by createdAt
+        const q = query(collection(db, "messages"), orderBy("createdAt", "desc"));
+        const unsubMessages = onSnapshot(q, async (snapshot) => {
+          const newMessages = snapshot.docs.map((doc) => {
+            const data = doc.data();
+            const createdAt = data.createdAt ? data.createdAt.toDate() : new Date();
+            return {
+              _id: doc.id,
+              text: data.text,
+              createdAt,
+              user: data.user,
+            };
+          });
 
-    // Cleanup on unmount or when the query changes
-    return () => unsubMessages();
+          setMessages(newMessages);
+
+          try {
+            // Cache messages in AsyncStorage
+            await AsyncStorage.setItem("cachedMessages", JSON.stringify(newMessages));
+          } catch (error) {
+            console.error("Error caching messages:", error);
+          }
+        });
+
+        return () => unsubMessages(); // Cleanup on unmount
+      } else {
+        // Load cached messages from AsyncStorage
+        try {
+          const cachedMessages = await AsyncStorage.getItem("cachedMessages");
+          if (cachedMessages) {
+            setMessages(JSON.parse(cachedMessages));
+          } else {
+            console.log("No cached messages found.");
+          }
+        } catch (error) {
+          console.error("Error loading cached messages:", error);
+        }
+      }
+    };
+
+    fetchMessages();
   }, [db, isConnected, name]);
 
   // Send a new message to Firestore
   const onSend = (newMessages) => {
-    const [message] = newMessages; // Get the first message from the array
+    const [message] = newMessages;
 
-    // Create a new document in the Firestore messages collection
     addDoc(collection(db, "messages"), {
       _id: message._id,
       text: message.text,
-      createdAt: serverTimestamp(),  // Use server timestamp for consistency
+      createdAt: serverTimestamp(),
       user: message.user,
     });
 
-    // Update the state for the local chat
     setMessages((prev) => GiftedChat.append(prev, newMessages));
+  };
+
+  // Customize InputToolbar rendering based on connection status
+  const renderInputToolbar = (props) => {
+    if (isConnected) return <InputToolbar {...props} />;
+    return null;
   };
 
   return (
@@ -52,7 +85,7 @@ const Chat = ({ route, navigation, db, isConnected }) => {
       <GiftedChat
         messages={messages}
         onSend={(messages) => onSend(messages)}
-        user={{ _id: userID, name }}  // Set the userID and name for the current user
+        user={{ _id: userID, name }}
         renderBubble={(props) => (
           <Bubble
             {...props}
@@ -62,6 +95,7 @@ const Chat = ({ route, navigation, db, isConnected }) => {
             }}
           />
         )}
+        renderInputToolbar={renderInputToolbar} // Use the custom InputToolbar
       />
       {Platform.OS === "android" ? <KeyboardAvoidingView behavior="height" /> : null}
       {Platform.OS === "ios" ? <KeyboardAvoidingView behavior="padding" /> : null}

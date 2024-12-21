@@ -29,7 +29,8 @@
     "react-navigation": "^5.0.0",
     "readable-stream": "^4.5.2",
     "remove-node-modules": "^1.7.6",
-    "undici": "^6.13.0"
+    "undici": "^6.13.0",
+    "@react-native-community/netinfo": "11.4.1"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

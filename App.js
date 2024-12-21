@@ -1,26 +1,38 @@
 import React, { useState, useEffect } from 'react';
+import { LogBox, Alert } from "react-native";
 import { StyleSheet } from 'react-native';
 // Import the screens
 import Start from './components/Start';
 import Chat from './components/Chat';
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getFirestore, disableNetwork, enableNetwork } from "firebase/firestore";
 import { getStorage } from 'firebase/storage';
-import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
+import { initializeAuth, getReactNativePersistence, getAuth } from 'firebase/auth';
 import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
+import { useNetInfo }from '@react-native-community/netinfo';
+
 
 // Import navigation
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 // Ignore all logs (optional)
-import { LogBox } from 'react-native';
 LogBox.ignoreAllLogs();
 
 const Stack = createNativeStackNavigator();
 
 const App = () => {
-  
+  const connectionStatus = useNetInfo();
+
+  //Handle when users lose connection
+  useEffect(() => {
+    if (connectionStatus.isConnected === false) {
+      Alert.alert("Connection Lost!");
+      disableNetwork(db);
+    } else if (connectionStatus.isConnected === true) {
+      enableNetwork(db);
+    }
+  }, [connectionStatus.isConnected]);
 
   // Firebase configuration
   const firebaseConfig = {
@@ -32,15 +44,27 @@ const App = () => {
     appId: "1:615964408425:web:afe3d21488498302e640f8"
   };
 
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
+  // Initialize Firebase only if it hasn't been initialized already
+ // Initialize Firebase app
+let app;
+if (getApps().length === 0) {
+  app = initializeApp(firebaseConfig);
+} else {
+  app = getApp();
+}
 
   // Initialize services
   const db = getFirestore(app);
   const storage = getStorage(app);
-  const auth = initializeAuth(app, {
+ // Initialize Auth with persistence, only if not already initialized
+let auth;
+try {
+  auth = getAuth(app);
+} catch (error) {
+  auth = initializeAuth(app, {
     persistence: getReactNativePersistence(ReactNativeAsyncStorage),
   });
+}
 
   return (
     <NavigationContainer>
@@ -49,6 +73,7 @@ const App = () => {
         <Stack.Screen name="Chat">
           {(props) => (
             <Chat
+              isConnected={connectionStatus.isConnected}
               db={db}
               storage={storage}
               auth={auth}
